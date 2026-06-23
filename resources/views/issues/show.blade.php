@@ -36,24 +36,79 @@
             @endif
 
             <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
-                <section class="overflow-hidden bg-white shadow-sm sm:rounded-lg">
+                <section
+                    class="bg-white shadow-sm sm:rounded-lg"
+                    x-data="issueTags({
+                        initialTags: @js($issue['tags']),
+                        availableTags: @js($allTags),
+                        attachUrlTemplate: @js(route('issues.tags.store', ['issue' => $issue['id'], 'tag' => '__TAG__'])),
+                        detachUrlTemplate: @js(route('issues.tags.destroy', ['issue' => $issue['id'], 'tag' => '__TAG__'])),
+                    })"
+                >
                     <div class="p-6">
-                        <h3 class="text-base font-semibold text-gray-900">{{ __('Issue Details') }}</h3>
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Issue Details') }}</h3>
+                        </div>
+
                         <p class="mt-3 text-sm leading-6 text-gray-600">
                             {{ $issue['description'] ?: __('No description yet.') }}
                         </p>
 
                         <div class="mt-6 flex flex-wrap gap-2">
-                            @forelse ($issue['tags'] as $tag)
-                                <span
-                                    class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"
-                                    style="background-color: {{ $tag['color'] ?? '#f3f4f6' }}1A; border-color: {{ $tag['color'] ?? '#d1d5db' }}; color: {{ $tag['color'] ?? '#374151' }};"
+                            <template x-for="tag in tags" :key="tag.id">
+                                <button
+                                    type="button"
+                                    @click="detach(tag)"
+                                    :disabled="isProcessing(tag)"
+                                    class="group relative inline-flex h-8 min-w-[6.5rem] items-center justify-center overflow-hidden rounded-full border px-3 text-xs font-medium transition duration-150 ease-in-out [perspective:600px] hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                    :style="tagStyle(tag)"
+                                    :aria-label="`Remove ${tag.name} tag`"
                                 >
-                                    {{ $tag['name'] }}
-                                </span>
-                            @empty
+                                    <span class="block truncate transition duration-200 [backface-visibility:hidden] group-hover:opacity-0 group-hover:[transform:rotateX(180deg)]" x-text="tag.name"></span>
+                                    <span class="absolute inset-0 flex items-center justify-center rounded-full px-3 text-red-700 opacity-0 transition duration-200 [backface-visibility:hidden] [transform:rotateX(-180deg)] group-hover:opacity-100 group-hover:[transform:rotateX(0deg)]">
+                                        {{ __('Remove tag') }}
+                                    </span>
+                                </button>
+                            </template>
+
+                            <template x-if="tags.length === 0">
                                 <span class="text-sm text-gray-500">{{ __('No tags attached.') }}</span>
-                            @endforelse
+                            </template>
+
+                            <div class="relative" @click.outside="open = false">
+                                <button type="button" @click="open = ! open" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    <svg class="h-3.5 w-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    {{ __('New Tag') }}
+                                </button>
+
+                                <div x-show="open" x-transition class="absolute left-0 z-10 mt-2 w-72 rounded-md border border-gray-200 bg-white p-3 shadow-lg sm:left-auto sm:right-0">
+                                    <div class="flex flex-col gap-2">
+                                        <p x-show="error" x-text="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></p>
+
+                                        <template x-for="tag in unattachedTags()" :key="tag.id">
+                                            <button
+                                                type="button"
+                                                @click="attach(tag)"
+                                                :disabled="isProcessing(tag)"
+                                                class="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm transition hover:border-indigo-300 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                            >
+                                                <span class="inline-flex min-w-0 items-center gap-2">
+                                                    <span class="h-3 w-3 shrink-0 rounded-full border" :style="`background-color: ${tag.color || '#f3f4f6'}; border-color: ${tag.color || '#d1d5db'};`"></span>
+                                                    <span class="truncate font-medium text-gray-800" x-text="tag.name"></span>
+                                                </span>
+
+                                                <span class="shrink-0 text-xs font-semibold uppercase tracking-widest text-indigo-700">{{ __('Add') }}</span>
+                                            </button>
+                                        </template>
+
+                                        <template x-if="unattachedTags().length === 0">
+                                            <p class="px-1 py-2 text-sm text-gray-600">{{ __('All tags are attached.') }}</p>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
