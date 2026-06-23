@@ -237,8 +237,9 @@ it('shows an owned issue with tags and comments', function () {
         ->assertSee('Remove tag')
         ->assertSee('Add', false)
         ->assertSee("issues\\/{$issue->id}\\/tags\\/__TAG__", false)
-        ->assertSee('Ada Lovelace')
-        ->assertSee('This also happens on mobile.');
+        ->assertSee("issues\\/{$issue->id}\\/comments", false)
+        ->assertSee('Add Comment')
+        ->assertSee('Load More');
 });
 
 it('does not show another users issue', function () {
