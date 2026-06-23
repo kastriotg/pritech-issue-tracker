@@ -138,31 +138,75 @@
                 </aside>
             </div>
 
-            <section class="mt-6 overflow-hidden bg-white shadow-sm sm:rounded-lg">
+            <section
+                class="mt-6 overflow-hidden bg-white shadow-sm sm:rounded-lg"
+                x-data="issueComments({
+                    indexUrl: @js(route('issues.comments.index', $issue['id'])),
+                    storeUrl: @js(route('issues.comments.store', $issue['id'])),
+                })"
+            >
                 <div class="border-b border-gray-100 p-6">
                     <h3 class="text-base font-semibold text-gray-900">{{ __('Comments') }}</h3>
                 </div>
 
                 <div class="divide-y divide-gray-100">
-                    @forelse ($comments as $comment)
+                    <template x-for="comment in comments" :key="comment.id">
                         <article class="p-6">
                             <div class="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
-                                <h4 class="font-semibold text-gray-900">{{ $comment->author_name }}</h4>
-                                <p class="text-xs font-medium uppercase tracking-widest text-gray-500">{{ $comment->created_at->format('M j, Y') }}</p>
+                                <h4 class="font-semibold text-gray-900" x-text="comment.author_name"></h4>
+                                <p class="text-xs font-medium uppercase tracking-widest text-gray-500" x-text="comment.created_at_label"></p>
                             </div>
-                            <p class="mt-3 text-sm leading-6 text-gray-600">{{ $comment->body }}</p>
+                            <p class="mt-3 whitespace-pre-line text-sm leading-6 text-gray-600" x-text="comment.body"></p>
                         </article>
-                    @empty
+                    </template>
+
+                    <template x-if="! isLoading && comments.length === 0">
                         <div class="p-6 text-sm text-gray-600">
                             {{ __('No comments yet.') }}
                         </div>
-                    @endforelse
-                </div>
-            </section>
+                    </template>
 
-            <div class="mt-6">
-                {{ $comments->links() }}
-            </div>
+                    <template x-if="isLoading && comments.length === 0">
+                        <div class="p-6 text-sm text-gray-600">
+                            {{ __('Loading comments...') }}
+                        </div>
+                    </template>
+                </div>
+
+                <div class="border-t border-gray-100 p-6" x-show="nextPageUrl">
+                    <x-secondary-button type="button" @click="loadComments(nextPageUrl)" x-bind:disabled="isLoading">
+                        <span x-show="! isLoading">{{ __('Load More') }}</span>
+                        <span x-show="isLoading">{{ __('Loading...') }}</span>
+                    </x-secondary-button>
+                </div>
+
+                <form class="border-t border-gray-100 p-6" @submit.prevent="submit">
+                    <div>
+                        <x-input-label for="body" :value="__('Comment')" />
+                        <textarea
+                            id="body"
+                            name="body"
+                            rows="3"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            x-model="form.body"
+                        ></textarea>
+                        <template x-if="errors.body">
+                            <p class="mt-2 text-sm text-red-600" x-text="errors.body[0]"></p>
+                        </template>
+                    </div>
+
+                    <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-sm text-gray-500">
+                            {{ __('Posting as :name', ['name' => auth()->user()->name]) }}
+                        </p>
+
+                        <x-primary-button type="submit" x-bind:disabled="isSubmitting">
+                            <span x-show="! isSubmitting">{{ __('Add Comment') }}</span>
+                            <span x-show="isSubmitting">{{ __('Adding...') }}</span>
+                        </x-primary-button>
+                    </div>
+                </form>
+            </section>
         </div>
     </div>
 </x-app-layout>

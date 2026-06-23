@@ -22,7 +22,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('tags', TagController::class)->only(['index', 'store']);
     Route::post('issues/{issue}/tags/{tag}', [IssueTagController::class, 'store'])->name('issues.tags.store');
     Route::delete('issues/{issue}/tags/{tag}', [IssueTagController::class, 'destroy'])->name('issues.tags.destroy');
-    Route::post('comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::get('issues/{issue}/comments', [CommentController::class, 'index'])->name('issues.comments.index');
+    Route::post('issues/{issue}/comments', [CommentController::class, 'store'])->name('issues.comments.store');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
