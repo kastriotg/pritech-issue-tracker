@@ -9,7 +9,9 @@ use Illuminate\Validation\Rule;
 class StoreTagRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Authorizes any request to store a tag.
+     *
+     * @return bool Always `true`.
      */
     public function authorize(): bool
     {

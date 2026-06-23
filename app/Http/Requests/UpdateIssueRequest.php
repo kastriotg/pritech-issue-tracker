@@ -9,7 +9,9 @@ use Illuminate\Validation\Rule;
 class UpdateIssueRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Authorizes any request.
+     *
+     * @return bool `true`.
      */
     public function authorize(): bool
     {

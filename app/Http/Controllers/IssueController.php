@@ -32,7 +32,7 @@ class IssueController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display a specific Issue.
      */
     public function show(Issue $issue)
     {
@@ -48,7 +48,7 @@ class IssueController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified issue with request data.
      */
     public function update(Request $request, Issue $issue)
     {

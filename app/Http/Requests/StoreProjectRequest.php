@@ -8,7 +8,9 @@ use Illuminate\Foundation\Http\FormRequest;
 class StoreProjectRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Authorizes all requests.
+     *
+     * @return bool Always `true`.
      */
     public function authorize(): bool
     {

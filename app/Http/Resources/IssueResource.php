@@ -10,6 +10,7 @@ class IssueResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
+     * @param Request $request The HTTP request object.
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array

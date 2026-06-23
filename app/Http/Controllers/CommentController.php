@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 class CommentController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
+     * Stores a newly created comment.
      */
     public function store(Request $request)
     {

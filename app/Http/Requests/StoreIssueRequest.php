@@ -9,7 +9,9 @@ use Illuminate\Validation\Rule;
 class StoreIssueRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Grants authorization for all incoming requests.
+     *
+     * @return bool `true`.
      */
     public function authorize(): bool
     {
@@ -17,7 +19,7 @@ class StoreIssueRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Define validation constraints for creating an issue.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */

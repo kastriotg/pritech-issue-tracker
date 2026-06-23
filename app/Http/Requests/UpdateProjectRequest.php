@@ -8,7 +8,9 @@ use Illuminate\Foundation\Http\FormRequest;
 class UpdateProjectRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Grants authorization for the update project request.
+     *
+     * @return bool `true`, always authorizing the request.
      */
     public function authorize(): bool
     {

@@ -8,7 +8,9 @@ use Illuminate\Foundation\Http\FormRequest;
 class StoreCommentRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Always authorizes the request.
+     *
+     * @return bool Always `true`.
      */
     public function authorize(): bool
     {
