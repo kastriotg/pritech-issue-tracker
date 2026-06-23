@@ -1,0 +1,15 @@
+{
+    "agents": [
+        "codex"
+    ],
+    "cloud": false,
+    "packages": [
+        "fruitcake/laravel-debugbar"
+    ],
+    "skills": [
+        "laravel-best-practices",
+        "pest-testing",
+        "tailwindcss-development",
+        "debug-using-debugbar"
+    ]
+}
