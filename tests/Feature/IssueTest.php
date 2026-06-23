@@ -158,7 +158,7 @@ it('does not create an issue for another users project', function () {
     ]);
 });
 
-it('shows filtered issues for the authenticated users projects', function () {
+it('shows filtered issues for all readable projects', function () {
     $user = User::factory()->create();
     $project = Project::factory()->for($user)->create([
         'name' => 'Customer Portal',
@@ -200,6 +200,26 @@ it('shows filtered issues for the authenticated users projects', function () {
         ->assertDontSee('Private roadmap item')
         ->assertDontSee(route('issues.show', $hiddenPriorityIssue, absolute: false))
         ->assertDontSee(route('issues.show', $otherProjectIssue, absolute: false));
+});
+
+it('lists another users issue without owner actions', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create([
+        'name' => 'Public Roadmap',
+    ]);
+    $issue = Issue::factory()->for($project)->create([
+        'title' => 'Review public release',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index'))
+        ->assertSuccessful()
+        ->assertSee('Review public release')
+        ->assertSee('Public Roadmap')
+        ->assertSee(route('issues.show', $issue, absolute: false))
+        ->assertDontSee(route('issues.edit', $issue, absolute: false))
+        ->assertDontSee('Edit')
+        ->assertDontSee('Delete');
 });
 
 it('shows an owned issue with tags and comments', function () {
@@ -252,13 +272,39 @@ it('shows an owned issue with tags and comments', function () {
         ->assertSee('Load More');
 });
 
-it('does not show another users issue', function () {
+it('shows another users issue without owner actions', function () {
     $user = User::factory()->create();
-    $issue = Issue::factory()->create();
+    $project = Project::factory()->create([
+        'name' => 'Public Roadmap',
+    ]);
+    $issue = Issue::factory()->for($project)->create([
+        'title' => 'Review public release',
+        'description' => 'Check the launch checklist.',
+    ]);
+    $tag = Tag::factory()->create([
+        'name' => 'Review',
+    ]);
+    $member = User::factory()->create([
+        'name' => 'Grace Hopper',
+    ]);
+
+    $issue->tags()->attach($tag);
+    $issue->members()->attach($member);
 
     $this->actingAs($user)
         ->get(route('issues.show', $issue))
-        ->assertNotFound();
+        ->assertSuccessful()
+        ->assertSee('Review public release')
+        ->assertSee('Check the launch checklist.')
+        ->assertSee('Public Roadmap')
+        ->assertSee('Review')
+        ->assertSee('Grace Hopper')
+        ->assertDontSee('Edit')
+        ->assertDontSee('Delete')
+        ->assertDontSee('New Tag')
+        ->assertDontSee('Assign')
+        ->assertDontSee('Remove tag')
+        ->assertDontSee('Remove');
 });
 
 it('shows the issue edit form for an owned issue', function () {

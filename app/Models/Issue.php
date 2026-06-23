@@ -47,7 +47,7 @@ class Issue extends Model
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return $query->whereHas('project', fn (Builder $query) => $query->whereBelongsTo($user));
+        return $query;
     }
 
     /**

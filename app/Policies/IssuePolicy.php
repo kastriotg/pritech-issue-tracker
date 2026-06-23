@@ -21,7 +21,7 @@ class IssuePolicy
      */
     public function view(User $user, Issue $issue): bool|Response
     {
-        return $this->ownsIssueProject($user, $issue) ?: Response::denyAsNotFound();
+        return true;
     }
 
     /**
@@ -66,6 +66,10 @@ class IssuePolicy
 
     private function ownsIssueProject(User $user, Issue $issue): bool
     {
+        if (! $issue->relationLoaded('project')) {
+            $issue->load('project:id,user_id');
+        }
+
         return (int) $issue->project->user_id === $user->id;
     }
 }
