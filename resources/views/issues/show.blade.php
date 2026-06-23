@@ -35,7 +35,7 @@
                 </div>
             @endif
 
-            <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
+            <div class="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)_minmax(18rem,1fr)]">
                 <section
                     class="bg-white shadow-sm sm:rounded-lg"
                     x-data="issueTags({
@@ -134,6 +134,81 @@
                                 <dd class="font-semibold text-gray-900">{{ $issue['comments_count'] }}</dd>
                             </div>
                         </dl>
+                    </div>
+                </aside>
+
+                <aside
+                    class="relative bg-white shadow-sm sm:rounded-lg"
+                    x-data="issueMembers({
+                        initialMembers: @js($issue['members']),
+                        availableUsers: @js($allUsers),
+                        attachUrlTemplate: @js(route('issues.members.store', ['issue' => $issue['id'], 'user' => '__USER__'])),
+                        detachUrlTemplate: @js(route('issues.members.destroy', ['issue' => $issue['id'], 'user' => '__USER__'])),
+                    })"
+                >
+                    <div class="p-6">
+                        <div class="flex items-center justify-between gap-3">
+                            <h3 class="text-base font-semibold text-gray-900">{{ __('Members') }}</h3>
+
+                            <div class="relative" @click.outside="open = false">
+                                <button type="button" @click="open = ! open" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    <svg class="h-3.5 w-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                    </svg>
+                                    {{ __('Assign') }}
+                                </button>
+
+                                <div x-show="open" x-transition class="absolute right-0 z-30 mt-2 max-h-72 w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md border border-gray-200 bg-white p-2 shadow-xl">
+                                    <div class="flex flex-col gap-2">
+                                        <p x-show="error" x-text="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></p>
+
+                                        <template x-for="user in unassignedUsers()" :key="user.id">
+                                            <button
+                                                type="button"
+                                                @click="attach(user)"
+                                                :disabled="isProcessing(user)"
+                                                class="flex items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                            >
+                                                <span class="min-w-0">
+                                                    <span class="block truncate font-medium text-gray-800" x-text="user.name"></span>
+                                                    <span class="block truncate text-xs text-gray-500" x-text="user.email"></span>
+                                                </span>
+
+                                                <span class="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-indigo-700">{{ __('Add') }}</span>
+                                            </button>
+                                        </template>
+
+                                        <template x-if="unassignedUsers().length === 0">
+                                            <p class="px-1 py-2 text-sm text-gray-600">{{ __('All users are assigned.') }}</p>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 flex flex-col gap-2">
+                            <template x-for="member in members" :key="member.id">
+                                <div class="flex items-center justify-between gap-3 rounded-md border border-gray-200 px-3 py-2">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-medium text-gray-900" x-text="member.name"></p>
+                                        <p class="truncate text-xs text-gray-500" x-text="member.email"></p>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        @click="detach(member)"
+                                        :disabled="isProcessing(member)"
+                                        class="shrink-0 text-xs font-semibold uppercase tracking-widest text-red-700 transition hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                    >
+                                        {{ __('Remove') }}
+                                    </button>
+                                </div>
+                            </template>
+
+                            <template x-if="members.length === 0">
+                                <p class="text-sm text-gray-500">{{ __('No members assigned.') }}</p>
+                            </template>
+                        </div>
                     </div>
                 </aside>
             </div>

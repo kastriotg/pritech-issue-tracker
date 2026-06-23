@@ -16,7 +16,6 @@ class ListProjectsAction
     {
         return [
             'projects' => Project::query()
-                ->visibleTo($user)
                 ->withCount('issues')
                 ->latest()
                 ->paginate(10)

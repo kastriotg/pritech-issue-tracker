@@ -40,6 +40,12 @@ class IssueResource extends JsonResource
                     ->map(fn ($tag): array => TagResource::make($tag)->resolve($request))
                     ->all(),
             ),
+            'members' => $this->when(
+                $this->relationLoaded('members'),
+                fn (): array => $this->members
+                    ->map(fn ($member): array => UserResource::make($member)->resolve($request))
+                    ->all(),
+            ),
             'tag_badges' => collect($this->resource->getAttributes()['tag_badges'] ?? [])->map(fn ($tag): array => [
                 'id' => $tag->id,
                 'name' => $tag->name,

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Issue;
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -40,5 +41,14 @@ class IssueFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'priority' => 'high',
         ]);
+    }
+
+    public function withMembers(int $count = 2): static
+    {
+        return $this->afterCreating(function (Issue $issue) use ($count): void {
+            $issue->members()->syncWithoutDetaching(
+                User::factory()->count($count)->create(),
+            );
+        });
     }
 }
