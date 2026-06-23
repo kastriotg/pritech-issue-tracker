@@ -217,8 +217,13 @@ it('shows an owned issue with tags and comments', function () {
         'name' => 'Bug',
         'color' => '#ff2525',
     ]);
+    $member = User::factory()->create([
+        'name' => 'Katherine Johnson',
+        'email' => 'katherine@example.com',
+    ]);
 
     $issue->tags()->attach($tag);
+    $issue->members()->attach($member);
     Comment::factory()->for($issue)->create([
         'author_name' => 'Ada Lovelace',
         'body' => 'This also happens on mobile.',
@@ -233,10 +238,15 @@ it('shows an owned issue with tags and comments', function () {
         ->assertSee('In Progress')
         ->assertSee('High')
         ->assertSee('Bug')
+        ->assertSee('Members')
+        ->assertSee('Katherine Johnson')
+        ->assertSee('katherine@example.com')
+        ->assertSee('Assign')
         ->assertSee('New Tag')
         ->assertSee('Remove tag')
         ->assertSee('Add', false)
         ->assertSee("issues\\/{$issue->id}\\/tags\\/__TAG__", false)
+        ->assertSee("issues\\/{$issue->id}\\/members\\/__USER__", false)
         ->assertSee("issues\\/{$issue->id}\\/comments", false)
         ->assertSee('Add Comment')
         ->assertSee('Load More');
@@ -385,4 +395,51 @@ it('does not attach a tag to another users issue', function () {
         ->assertNotFound();
 
     expect($issue->tags()->pluck('tags.id')->all())->toBe([]);
+});
+
+it('attaches a member to an owned issue without a full page reload', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $issue = Issue::factory()->for($project)->create();
+    $member = User::factory()->create([
+        'name' => 'Dorothy Vaughan',
+        'email' => 'dorothy@example.com',
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('issues.members.store', [$issue, $member]))
+        ->assertSuccessful()
+        ->assertJsonPath('members.0.id', $member->id)
+        ->assertJsonPath('members.0.name', 'Dorothy Vaughan')
+        ->assertJsonPath('members.0.email', 'dorothy@example.com');
+
+    expect($issue->members()->pluck('users.id')->all())->toBe([$member->id]);
+});
+
+it('detaches a member from an owned issue without a full page reload', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $issue = Issue::factory()->for($project)->create();
+    $member = User::factory()->create();
+
+    $issue->members()->attach($member);
+
+    $this->actingAs($user)
+        ->deleteJson(route('issues.members.destroy', [$issue, $member]))
+        ->assertSuccessful()
+        ->assertJsonPath('members', []);
+
+    expect($issue->members()->pluck('users.id')->all())->toBe([]);
+});
+
+it('does not attach a member to another users issue', function () {
+    $user = User::factory()->create();
+    $issue = Issue::factory()->create();
+    $member = User::factory()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('issues.members.store', [$issue, $member]))
+        ->assertNotFound();
+
+    expect($issue->members()->pluck('users.id')->all())->toBe([]);
 });

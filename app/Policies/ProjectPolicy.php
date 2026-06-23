@@ -21,7 +21,7 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool|Response
     {
-        return $this->ownsProject($user, $project) ?: Response::denyAsNotFound();
+        return true;
     }
 
     /**

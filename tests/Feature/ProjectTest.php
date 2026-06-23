@@ -44,14 +44,14 @@ it('uses the same validation rules for project updates', function () {
     expect((new UpdateProjectRequest)->rules())->toBe((new StoreProjectRequest)->rules());
 });
 
-it('shows the authenticated users projects', function () {
+it('shows all projects and only exposes owner actions for owned projects', function () {
     $user = User::factory()->create();
     $project = Project::factory()->for($user)->create([
         'name' => 'Customer Portal',
         'description' => 'Improve the account dashboard.',
     ]);
     $otherProject = Project::factory()->create([
-        'name' => 'Hidden Roadmap',
+        'name' => 'Public Roadmap',
     ]);
 
     Issue::factory()->count(2)->for($project)->create();
@@ -62,9 +62,11 @@ it('shows the authenticated users projects', function () {
         ->assertSee('Customer Portal')
         ->assertSee('Improve the account dashboard.')
         ->assertSee('2 issues')
-        ->assertDontSee('Hidden Roadmap')
+        ->assertSee('Public Roadmap')
         ->assertSee(route('projects.show', $project, absolute: false))
-        ->assertDontSee(route('projects.show', $otherProject, absolute: false));
+        ->assertSee(route('projects.show', $otherProject, absolute: false))
+        ->assertSee(route('projects.edit', $project, absolute: false))
+        ->assertDontSee(route('projects.edit', $otherProject, absolute: false));
 });
 
 it('shows a project with its issues', function () {
@@ -102,13 +104,19 @@ it('shows a project with its issues', function () {
         ->assertSee(route('issues.show', $issue, absolute: false));
 });
 
-it('does not show another users project', function () {
+it('shows another users project without owner actions', function () {
     $user = User::factory()->create();
-    $project = Project::factory()->create();
+    $project = Project::factory()->create([
+        'name' => 'Shared Roadmap',
+    ]);
 
     $this->actingAs($user)
         ->get(route('projects.show', $project))
-        ->assertNotFound();
+        ->assertSuccessful()
+        ->assertSee('Shared Roadmap')
+        ->assertDontSee('Edit')
+        ->assertDontSee('Delete')
+        ->assertDontSee('Add Issue');
 });
 
 it('creates a project for the authenticated user', function () {
@@ -146,6 +154,22 @@ it('updates an owned project', function () {
         ->description->toBe('Updated details.');
 });
 
+it('does not update another users project', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create([
+        'name' => 'Original Name',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('projects.update', $project), [
+            'name' => 'New Name',
+            'description' => 'Updated details.',
+        ])
+        ->assertNotFound();
+
+    expect($project->refresh()->name)->toBe('Original Name');
+});
+
 it('deletes an owned project', function () {
     $user = User::factory()->create();
     $project = Project::factory()->for($user)->create();
@@ -155,4 +179,15 @@ it('deletes an owned project', function () {
         ->assertRedirect(route('projects.index'));
 
     $this->assertModelMissing($project);
+});
+
+it('does not delete another users project', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->create();
+
+    $this->actingAs($user)
+        ->delete(route('projects.destroy', $project))
+        ->assertNotFound();
+
+    $this->assertModelExists($project);
 });

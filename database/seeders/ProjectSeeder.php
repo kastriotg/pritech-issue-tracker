@@ -18,6 +18,10 @@ class ProjectSeeder extends Seeder
             ['name' => 'Test User', 'password' => 'password'],
         );
 
+        User::factory()
+            ->count(15)
+            ->create();
+
         Project::factory()
             ->count(30)
             ->for($user)

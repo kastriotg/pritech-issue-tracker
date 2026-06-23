@@ -31,6 +31,11 @@ class Issue extends Model
         return $this->belongsToMany(Tag::class);
     }
 
+    public function members(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class);
+    }
+
     public function comments(): HasMany
     {
         return $this->hasMany(Comment::class);
