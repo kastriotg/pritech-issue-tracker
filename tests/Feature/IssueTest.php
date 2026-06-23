@@ -233,6 +233,10 @@ it('shows an owned issue with tags and comments', function () {
         ->assertSee('In Progress')
         ->assertSee('High')
         ->assertSee('Bug')
+        ->assertSee('New Tag')
+        ->assertSee('Remove tag')
+        ->assertSee('Add', false)
+        ->assertSee("issues\\/{$issue->id}\\/tags\\/__TAG__", false)
         ->assertSee('Ada Lovelace')
         ->assertSee('This also happens on mobile.');
 });
@@ -333,4 +337,51 @@ it('deletes an owned issue through the delete action', function () {
         ->assertRedirect(route('projects.show', $project));
 
     $this->assertModelMissing($issue);
+});
+
+it('attaches a tag to an owned issue without a full page reload', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $issue = Issue::factory()->for($project)->create();
+    $tag = Tag::factory()->create([
+        'name' => 'Regression',
+        'color' => '#F97316',
+    ]);
+
+    $this->actingAs($user)
+        ->postJson(route('issues.tags.store', [$issue, $tag]))
+        ->assertSuccessful()
+        ->assertJsonPath('tags.0.id', $tag->id)
+        ->assertJsonPath('tags.0.name', 'Regression')
+        ->assertJsonPath('tags.0.color', '#F97316');
+
+    expect($issue->tags()->pluck('tags.id')->all())->toBe([$tag->id]);
+});
+
+it('detaches a tag from an owned issue without a full page reload', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $issue = Issue::factory()->for($project)->create();
+    $tag = Tag::factory()->create();
+
+    $issue->tags()->attach($tag);
+
+    $this->actingAs($user)
+        ->deleteJson(route('issues.tags.destroy', [$issue, $tag]))
+        ->assertSuccessful()
+        ->assertJsonPath('tags', []);
+
+    expect($issue->tags()->pluck('tags.id')->all())->toBe([]);
+});
+
+it('does not attach a tag to another users issue', function () {
+    $user = User::factory()->create();
+    $issue = Issue::factory()->create();
+    $tag = Tag::factory()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('issues.tags.store', [$issue, $tag]))
+        ->assertNotFound();
+
+    expect($issue->tags()->pluck('tags.id')->all())->toBe([]);
 });

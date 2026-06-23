@@ -3,7 +3,9 @@
 namespace App\Actions\Issues;
 
 use App\Http\Resources\IssueResource;
+use App\Http\Resources\TagResource;
 use App\Models\Issue;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 
 class ShowIssueAction
@@ -18,6 +20,7 @@ class ShowIssueAction
         $issue->setAttribute('comments_count', $comments->total());
 
         return [
+            'allTags' => TagResource::collection(Tag::query()->orderBy('name')->get())->resolve($request),
             'comments' => $comments,
             'issue' => IssueResource::make($issue)->resolve($request),
         ];
