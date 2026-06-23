@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\CreateProjectAction;
-use App\Actions\DeleteProjectAction;
-use App\Actions\UpdateProjectAction;
+use App\Actions\Projects\CreateProjectAction;
+use App\Actions\Projects\DeleteProjectAction;
+use App\Actions\Projects\ListProjectsAction;
+use App\Actions\Projects\ShowProjectAction;
+use App\Actions\Projects\UpdateProjectAction;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
-use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class ProjectController extends Controller
@@ -19,18 +20,9 @@ class ProjectController extends Controller
     /**
      * Display a paginated list of projects for the authenticated user.
      */
-    public function index(Request $request): View
+    public function index(Request $request, ListProjectsAction $listProjects): View
     {
-        $projects = Project::query()
-            ->whereBelongsTo($request->user())
-            ->withCount('issues')
-            ->latest()
-            ->paginate(10)
-            ->through(fn (Project $project): array => ProjectResource::make($project)->resolve($request));
-
-        return view('projects.index', [
-            'projects' => $projects,
-        ]);
+        return view('projects.index', $listProjects->handle($request, $request->user()));
     }
 
     /**
@@ -55,45 +47,19 @@ class ProjectController extends Controller
     /**
      * Display the specified project.
      */
-    public function show(Request $request, Project $project): View
+    public function show(Request $request, Project $project, ShowProjectAction $showProject): View
     {
-        $this->authorizeProjectOwner($request, $project);
+        Gate::authorize('view', $project);
 
-        $project->load([
-            'issues' => fn ($query) => $query
-                ->withCount('comments')
-                ->latest(),
-        ]);
-
-        $issueTags = collect();
-        $issueIds = $project->issues->pluck('id');
-
-        if ($issueIds->isNotEmpty()) {
-            $issueTags = DB::table('issue_tag')
-                ->join('tags', 'tags.id', '=', 'issue_tag.tag_id')
-                ->whereIn('issue_tag.issue_id', $issueIds)
-                ->select(['issue_tag.issue_id', 'tags.id', 'tags.name', 'tags.color'])
-                ->orderBy('tags.name')
-                ->get()
-                ->unique(fn ($tag) => $tag->issue_id.'-'.$tag->id)
-                ->groupBy('issue_id');
-        }
-
-        $project->issues->each(function ($issue) use ($issueTags): void {
-            $issue->setAttribute('tag_badges', $issueTags->get($issue->id, collect()));
-        });
-
-        return view('projects.show', [
-            'project' => ProjectResource::make($project)->resolve($request),
-        ]);
+        return view('projects.show', $showProject->handle($request, $project));
     }
 
     /**
      * Show the form for editing the specified project.
      */
-    public function edit(Request $request, Project $project): View
+    public function edit(Project $project): View
     {
-        $this->authorizeProjectOwner($request, $project);
+        Gate::authorize('update', $project);
 
         return view('projects.edit', [
             'project' => $project,
@@ -105,7 +71,7 @@ class ProjectController extends Controller
      */
     public function update(UpdateProjectRequest $request, Project $project, UpdateProjectAction $updateProject): RedirectResponse
     {
-        $this->authorizeProjectOwner($request, $project);
+        Gate::authorize('update', $project);
 
         $updateProject->handle($project, $request->validated());
 
@@ -116,21 +82,13 @@ class ProjectController extends Controller
     /**
      * Remove the specified project from storage.
      */
-    public function destroy(Request $request, Project $project, DeleteProjectAction $deleteProject): RedirectResponse
+    public function destroy(Project $project, DeleteProjectAction $deleteProject): RedirectResponse
     {
-        $this->authorizeProjectOwner($request, $project);
+        Gate::authorize('delete', $project);
 
         $deleteProject->handle($project);
 
         return to_route('projects.index')
             ->with('status', 'Project deleted.');
-    }
-
-    /**
-     * Authorize that the current user owns the specified project.
-     */
-    private function authorizeProjectOwner(Request $request, Project $project): void
-    {
-        abort_unless((int) $project->user_id === $request->user()->id, 404);
     }
 }
