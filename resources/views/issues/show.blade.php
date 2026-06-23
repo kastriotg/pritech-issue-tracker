@@ -10,20 +10,26 @@
                 </h2>
             </div>
 
-            <div class="flex items-center gap-2">
-                <a href="{{ route('issues.edit', $issue['id']) }}" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                    {{ __('Edit') }}
-                </a>
+            @canany(['update', 'delete'], $issue['model'])
+                <div class="flex items-center gap-2">
+                    @can('update', $issue['model'])
+                        <a href="{{ route('issues.edit', $issue['id']) }}" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                            {{ __('Edit') }}
+                        </a>
+                    @endcan
 
-                <form method="POST" action="{{ route('issues.destroy', $issue['id']) }}" onsubmit="return confirm('{{ __('Delete this issue?') }}')">
-                    @csrf
-                    @method('DELETE')
+                    @can('delete', $issue['model'])
+                        <form method="POST" action="{{ route('issues.destroy', $issue['id']) }}" onsubmit="return confirm('{{ __('Delete this issue?') }}')">
+                            @csrf
+                            @method('DELETE')
 
-                    <x-danger-button class="shadow-sm">
-                        {{ __('Delete') }}
-                    </x-danger-button>
-                </form>
-            </div>
+                            <x-danger-button class="shadow-sm">
+                                {{ __('Delete') }}
+                            </x-danger-button>
+                        </form>
+                    @endcan
+                </div>
+            @endcanany
         </div>
     </x-slot>
 
@@ -56,59 +62,69 @@
 
                         <div class="mt-6 flex flex-wrap gap-2">
                             <template x-for="tag in tags" :key="tag.id">
-                                <button
-                                    type="button"
-                                    @click="detach(tag)"
-                                    :disabled="isProcessing(tag)"
-                                    class="group relative inline-flex h-8 min-w-[6.5rem] items-center justify-center overflow-hidden rounded-full border px-3 text-xs font-medium transition duration-150 ease-in-out [perspective:600px] hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
-                                    :style="tagStyle(tag)"
-                                    :aria-label="`Remove ${tag.name} tag`"
-                                >
-                                    <span class="block truncate transition duration-200 [backface-visibility:hidden] group-hover:opacity-0 group-hover:[transform:rotateX(180deg)]" x-text="tag.name"></span>
-                                    <span class="absolute inset-0 flex items-center justify-center rounded-full px-3 text-red-700 opacity-0 transition duration-200 [backface-visibility:hidden] [transform:rotateX(-180deg)] group-hover:opacity-100 group-hover:[transform:rotateX(0deg)]">
-                                        {{ __('Remove tag') }}
-                                    </span>
-                                </button>
+                                @can('update', $issue['model'])
+                                    <button
+                                        type="button"
+                                        @click="detach(tag)"
+                                        :disabled="isProcessing(tag)"
+                                        class="group relative inline-flex h-8 min-w-[6.5rem] items-center justify-center overflow-hidden rounded-full border px-3 text-xs font-medium transition duration-150 ease-in-out [perspective:600px] hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                        :style="tagStyle(tag)"
+                                        :aria-label="`Remove ${tag.name} tag`"
+                                    >
+                                        <span class="block truncate transition duration-200 [backface-visibility:hidden] group-hover:opacity-0 group-hover:[transform:rotateX(180deg)]" x-text="tag.name"></span>
+                                        <span class="absolute inset-0 flex items-center justify-center rounded-full px-3 text-red-700 opacity-0 transition duration-200 [backface-visibility:hidden] [transform:rotateX(-180deg)] group-hover:opacity-100 group-hover:[transform:rotateX(0deg)]">
+                                            {{ __('Remove tag') }}
+                                        </span>
+                                    </button>
+                                @else
+                                    <span
+                                        class="inline-flex h-8 min-w-[6.5rem] items-center justify-center rounded-full border px-3 text-xs font-medium"
+                                        :style="tagStyle(tag)"
+                                        x-text="tag.name"
+                                    ></span>
+                                @endcan
                             </template>
 
                             <template x-if="tags.length === 0">
                                 <span class="text-sm text-gray-500">{{ __('No tags attached.') }}</span>
                             </template>
 
-                            <div class="relative" @click.outside="open = false">
-                                <button type="button" @click="open = ! open" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                    <svg class="h-3.5 w-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                    </svg>
-                                    {{ __('New Tag') }}
-                                </button>
+                            @can('update', $issue['model'])
+                                <div class="relative" @click.outside="open = false">
+                                    <button type="button" @click="open = ! open" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                        <svg class="h-3.5 w-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                        {{ __('New Tag') }}
+                                    </button>
 
-                                <div x-show="open" x-transition class="absolute left-0 z-10 mt-2 w-72 rounded-md border border-gray-200 bg-white p-3 shadow-lg sm:left-auto sm:right-0">
-                                    <div class="flex flex-col gap-2">
-                                        <p x-show="error" x-text="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></p>
+                                    <div x-show="open" x-transition class="absolute left-0 z-10 mt-2 w-72 rounded-md border border-gray-200 bg-white p-3 shadow-lg sm:left-auto sm:right-0">
+                                        <div class="flex flex-col gap-2">
+                                            <p x-show="error" x-text="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></p>
 
-                                        <template x-for="tag in unattachedTags()" :key="tag.id">
-                                            <button
-                                                type="button"
-                                                @click="attach(tag)"
-                                                :disabled="isProcessing(tag)"
-                                                class="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm transition hover:border-indigo-300 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
-                                            >
-                                                <span class="inline-flex min-w-0 items-center gap-2">
-                                                    <span class="h-3 w-3 shrink-0 rounded-full border" :style="`background-color: ${tag.color || '#f3f4f6'}; border-color: ${tag.color || '#d1d5db'};`"></span>
-                                                    <span class="truncate font-medium text-gray-800" x-text="tag.name"></span>
-                                                </span>
+                                            <template x-for="tag in unattachedTags()" :key="tag.id">
+                                                <button
+                                                    type="button"
+                                                    @click="attach(tag)"
+                                                    :disabled="isProcessing(tag)"
+                                                    class="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm transition hover:border-indigo-300 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                                >
+                                                    <span class="inline-flex min-w-0 items-center gap-2">
+                                                        <span class="h-3 w-3 shrink-0 rounded-full border" :style="`background-color: ${tag.color || '#f3f4f6'}; border-color: ${tag.color || '#d1d5db'};`"></span>
+                                                        <span class="truncate font-medium text-gray-800" x-text="tag.name"></span>
+                                                    </span>
 
-                                                <span class="shrink-0 text-xs font-semibold uppercase tracking-widest text-indigo-700">{{ __('Add') }}</span>
-                                            </button>
-                                        </template>
+                                                    <span class="shrink-0 text-xs font-semibold uppercase tracking-widest text-indigo-700">{{ __('Add') }}</span>
+                                                </button>
+                                            </template>
 
-                                        <template x-if="unattachedTags().length === 0">
-                                            <p class="px-1 py-2 text-sm text-gray-600">{{ __('All tags are attached.') }}</p>
-                                        </template>
+                                            <template x-if="unattachedTags().length === 0">
+                                                <p class="px-1 py-2 text-sm text-gray-600">{{ __('All tags are attached.') }}</p>
+                                            </template>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endcan
                         </div>
                     </div>
                 </section>
@@ -150,40 +166,42 @@
                         <div class="flex items-center justify-between gap-3">
                             <h3 class="text-base font-semibold text-gray-900">{{ __('Members') }}</h3>
 
-                            <div class="relative" @click.outside="open = false">
-                                <button type="button" @click="open = ! open" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                    <svg class="h-3.5 w-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                    </svg>
-                                    {{ __('Assign') }}
-                                </button>
+                            @can('update', $issue['model'])
+                                <div class="relative" @click.outside="open = false">
+                                    <button type="button" @click="open = ! open" class="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-3 text-xs font-semibold text-indigo-700 transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                        <svg class="h-3.5 w-3.5" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                        {{ __('Assign') }}
+                                    </button>
 
-                                <div x-show="open" x-transition class="absolute right-0 z-30 mt-2 max-h-72 w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md border border-gray-200 bg-white p-2 shadow-xl">
-                                    <div class="flex flex-col gap-2">
-                                        <p x-show="error" x-text="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></p>
+                                    <div x-show="open" x-transition class="absolute right-0 z-30 mt-2 max-h-72 w-56 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-md border border-gray-200 bg-white p-2 shadow-xl">
+                                        <div class="flex flex-col gap-2">
+                                            <p x-show="error" x-text="error" class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"></p>
 
-                                        <template x-for="user in unassignedUsers()" :key="user.id">
-                                            <button
-                                                type="button"
-                                                @click="attach(user)"
-                                                :disabled="isProcessing(user)"
-                                                class="flex items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
-                                            >
-                                                <span class="min-w-0">
-                                                    <span class="block truncate font-medium text-gray-800" x-text="user.name"></span>
-                                                    <span class="block truncate text-xs text-gray-500" x-text="user.email"></span>
-                                                </span>
+                                            <template x-for="user in unassignedUsers()" :key="user.id">
+                                                <button
+                                                    type="button"
+                                                    @click="attach(user)"
+                                                    :disabled="isProcessing(user)"
+                                                    class="flex items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                                >
+                                                    <span class="min-w-0">
+                                                        <span class="block truncate font-medium text-gray-800" x-text="user.name"></span>
+                                                        <span class="block truncate text-xs text-gray-500" x-text="user.email"></span>
+                                                    </span>
 
-                                                <span class="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-indigo-700">{{ __('Add') }}</span>
-                                            </button>
-                                        </template>
+                                                    <span class="shrink-0 rounded-md bg-indigo-50 px-2 py-1 text-xs font-semibold uppercase tracking-widest text-indigo-700">{{ __('Add') }}</span>
+                                                </button>
+                                            </template>
 
-                                        <template x-if="unassignedUsers().length === 0">
-                                            <p class="px-1 py-2 text-sm text-gray-600">{{ __('All users are assigned.') }}</p>
-                                        </template>
+                                            <template x-if="unassignedUsers().length === 0">
+                                                <p class="px-1 py-2 text-sm text-gray-600">{{ __('All users are assigned.') }}</p>
+                                            </template>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endcan
                         </div>
 
                         <div class="mt-4 flex flex-col gap-2">
@@ -194,14 +212,16 @@
                                         <p class="truncate text-xs text-gray-500" x-text="member.email"></p>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        @click="detach(member)"
-                                        :disabled="isProcessing(member)"
-                                        class="shrink-0 text-xs font-semibold uppercase tracking-widest text-red-700 transition hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
-                                    >
-                                        {{ __('Remove') }}
-                                    </button>
+                                    @can('update', $issue['model'])
+                                        <button
+                                            type="button"
+                                            @click="detach(member)"
+                                            :disabled="isProcessing(member)"
+                                            class="shrink-0 text-xs font-semibold uppercase tracking-widest text-red-700 transition hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                                        >
+                                            {{ __('Remove') }}
+                                        </button>
+                                    @endcan
                                 </div>
                             </template>
 

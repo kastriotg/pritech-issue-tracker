@@ -109,11 +109,16 @@ it('shows another users project without owner actions', function () {
     $project = Project::factory()->create([
         'name' => 'Shared Roadmap',
     ]);
+    $issue = Issue::factory()->for($project)->create([
+        'title' => 'Publish planning notes',
+    ]);
 
     $this->actingAs($user)
         ->get(route('projects.show', $project))
         ->assertSuccessful()
         ->assertSee('Shared Roadmap')
+        ->assertSee('Publish planning notes')
+        ->assertSee(route('issues.show', $issue, absolute: false))
         ->assertDontSee('Edit')
         ->assertDontSee('Delete')
         ->assertDontSee('Add Issue');

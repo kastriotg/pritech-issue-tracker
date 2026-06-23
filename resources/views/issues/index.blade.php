@@ -95,20 +95,26 @@
                                     </div>
                                 </div>
 
-                                <div class="flex shrink-0 items-center gap-2">
-                                    <a href="{{ route('issues.edit', $issue['id']) }}" class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                        {{ __('Edit') }}
-                                    </a>
+                                @canany(['update', 'delete'], $issue['model'])
+                                    <div class="flex shrink-0 items-center gap-2">
+                                        @can('update', $issue['model'])
+                                            <a href="{{ route('issues.edit', $issue['id']) }}" class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                                {{ __('Edit') }}
+                                            </a>
+                                        @endcan
 
-                                    <form method="POST" action="{{ route('issues.destroy', $issue['id']) }}" onsubmit="return confirm('{{ __('Delete this issue?') }}')">
-                                        @csrf
-                                        @method('DELETE')
+                                        @can('delete', $issue['model'])
+                                            <form method="POST" action="{{ route('issues.destroy', $issue['id']) }}" onsubmit="return confirm('{{ __('Delete this issue?') }}')">
+                                                @csrf
+                                                @method('DELETE')
 
-                                        <button type="submit" class="inline-flex items-center gap-2 rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 shadow-sm transition duration-150 ease-in-out hover:border-red-300 hover:bg-red-50 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                                            {{ __('Delete') }}
-                                        </button>
-                                    </form>
-                                </div>
+                                                <button type="submit" class="inline-flex items-center gap-2 rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-red-700 shadow-sm transition duration-150 ease-in-out hover:border-red-300 hover:bg-red-50 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                                                    {{ __('Delete') }}
+                                                </button>
+                                            </form>
+                                        @endcan
+                                    </div>
+                                @endcanany
                             </div>
                         </article>
                     @empty
