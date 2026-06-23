@@ -52,12 +52,19 @@ class Issue extends Model
 
     /**
      * @param  Builder<Issue>  $query
-     * @param  array{status?: string|null, priority?: string|null, tag?: int|string|null}  $filters
+     * @param  array{status?: string|null, priority?: string|null, tag?: int|string|null, search?: string|null}  $filters
      * @return Builder<Issue>
      */
     public function scopeFiltered(Builder $query, array $filters): Builder
     {
         return $query
+            ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query
+                        ->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                });
+            })
             ->when($filters['status'] ?? null, fn (Builder $query, string $status) => $query->where('status', $status))
             ->when($filters['priority'] ?? null, fn (Builder $query, string $priority) => $query->where('priority', $priority))
             ->when($filters['tag'] ?? null, fn (Builder $query, int|string $tagId) => $query->whereHas(

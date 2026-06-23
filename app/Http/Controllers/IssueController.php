@@ -23,7 +23,13 @@ class IssueController extends Controller
      */
     public function index(Request $request, ListIssuesAction $listIssues): View
     {
-        return view('issues.index', $listIssues->handle($request, $request->user()));
+        $data = $listIssues->handle($request, $request->user());
+
+        if ($request->ajax()) {
+            return view('issues.partials.list', $data);
+        }
+
+        return view('issues.index', $data);
     }
 
     /**

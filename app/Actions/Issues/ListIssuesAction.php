@@ -15,7 +15,8 @@ class ListIssuesAction
      */
     public function handle(Request $request, User $user): array
     {
-        $filters = $request->only(['status', 'priority', 'tag']);
+        $filters = $request->only(['search', 'status', 'priority', 'tag']);
+        $filters['search'] = trim((string) ($filters['search'] ?? ''));
 
         return [
             'filters' => $filters,
