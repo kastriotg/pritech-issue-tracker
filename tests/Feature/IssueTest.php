@@ -202,6 +202,57 @@ it('shows filtered issues for all readable projects', function () {
         ->assertDontSee(route('issues.show', $otherProjectIssue, absolute: false));
 });
 
+it('searches issues by title and description', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create([
+        'name' => 'Customer Portal',
+    ]);
+    $titleMatch = Issue::factory()->for($project)->create([
+        'title' => 'Repair invoice totals',
+        'description' => 'Checkout numbers are wrong.',
+    ]);
+    $descriptionMatch = Issue::factory()->for($project)->create([
+        'title' => 'Polish account settings',
+        'description' => 'Invoice export needs better spacing.',
+    ]);
+    $hiddenIssue = Issue::factory()->for($project)->create([
+        'title' => 'Improve dashboard filters',
+        'description' => 'Cards need clearer labels.',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['search' => 'invoice']))
+        ->assertSuccessful()
+        ->assertSee('Repair invoice totals')
+        ->assertSee('Polish account settings')
+        ->assertSee('value="invoice"', false)
+        ->assertDontSee('Improve dashboard filters')
+        ->assertSee(route('issues.show', $titleMatch, absolute: false))
+        ->assertSee(route('issues.show', $descriptionMatch, absolute: false))
+        ->assertDontSee(route('issues.show', $hiddenIssue, absolute: false));
+});
+
+it('returns the issue list partial for ajax search requests', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    Issue::factory()->for($project)->create([
+        'title' => 'Searchable billing bug',
+        'description' => 'Only this issue should return.',
+    ]);
+    Issue::factory()->for($project)->create([
+        'title' => 'Dashboard cleanup',
+        'description' => 'Unrelated work.',
+    ]);
+
+    $this->actingAs($user)
+        ->withHeader('X-Requested-With', 'XMLHttpRequest')
+        ->get(route('issues.index', ['search' => 'billing']))
+        ->assertSuccessful()
+        ->assertSee('Searchable billing bug')
+        ->assertDontSee('Dashboard cleanup')
+        ->assertDontSee('New Issue');
+});
+
 it('lists another users issue without owner actions', function () {
     $user = User::factory()->create();
     $project = Project::factory()->create([
