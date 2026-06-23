@@ -19,8 +19,9 @@ class ProjectSeeder extends Seeder
         );
 
         Project::factory()
-            ->count(5)
+            ->count(30)
             ->for($user)
+            ->withRandomIssues()
             ->create();
     }
 }
