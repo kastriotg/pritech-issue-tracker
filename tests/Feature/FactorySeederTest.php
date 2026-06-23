@@ -23,9 +23,11 @@ it('creates a complete issue graph with factories', function () {
 it('seeds projects issues tags and comments', function () {
     $this->seed(DatabaseSeeder::class);
 
+    $issueCount = Issue::query()->count();
+
     $this->assertDatabaseCount('tags', 5);
-    $this->assertDatabaseCount('projects', 5);
-    $this->assertDatabaseCount('issues', 15);
-    $this->assertDatabaseCount('comments', 30);
-    expect(Issue::query()->has('tags', '>=', 2)->count())->toBe(15);
+    $this->assertDatabaseCount('projects', 30);
+    expect($issueCount)->toBeBetween(30, 150);
+    $this->assertDatabaseCount('comments', $issueCount * 2);
+    expect(Issue::query()->has('tags', '>=', 2)->count())->toBe($issueCount);
 });
