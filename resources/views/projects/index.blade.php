@@ -25,21 +25,21 @@
                         <article class="p-6">
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div class="min-w-0">
-                                    <a href="{{ route('projects.show', $project) }}" class="text-lg font-semibold text-gray-900 hover:text-indigo-700">
-                                        {{ $project->name }}
+                                    <a href="{{ route('projects.show', $project['id']) }}" class="text-lg font-semibold text-gray-900 hover:text-indigo-700">
+                                        {{ $project['name'] }}
                                     </a>
 
                                     <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-                                        {{ $project->description ?: __('No description yet.') }}
+                                        {{ $project['description'] ?: __('No description yet.') }}
                                     </p>
 
                                     <p class="mt-3 text-xs font-medium uppercase tracking-widest text-gray-500">
-                                        {{ trans_choice(':count issue|:count issues', $project->issues_count, ['count' => $project->issues_count]) }}
+                                        {{ trans_choice(':count issue|:count issues', $project['issues_count'], ['count' => $project['issues_count']]) }}
                                     </p>
                                 </div>
 
                                 <div class="flex shrink-0 items-center gap-2">
-                                    <a href="{{ route('projects.edit', $project) }}" class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    <a href="{{ route('projects.edit', $project['id']) }}" class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition duration-150 ease-in-out hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                                         <svg class="h-4 w-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.125 16.875 4.5" />
@@ -47,7 +47,7 @@
                                         {{ __('Edit') }}
                                     </a>
 
-                                    <form method="POST" action="{{ route('projects.destroy', $project) }}" onsubmit="return confirm('{{ __('Delete this project?') }}')">
+                                    <form method="POST" action="{{ route('projects.destroy', $project['id']) }}" onsubmit="return confirm('{{ __('Delete this project?') }}')">
                                         @csrf
                                         @method('DELETE')
 

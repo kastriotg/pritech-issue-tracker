@@ -97,6 +97,8 @@ it('shows a project with its issues', function () {
         ->assertSee('High')
         ->assertSee('Bug')
         ->assertSee('#ff2525', false)
+        ->assertSee('Add Issue')
+        ->assertSee(route('issues.create', ['project_id' => $project->id], false))
         ->assertSee(route('issues.show', $issue, absolute: false));
 });
 

@@ -2,20 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateProjectAction;
+use App\Actions\DeleteProjectAction;
+use App\Actions\UpdateProjectAction;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
+use App\Http\Resources\ProjectResource;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ProjectController extends Controller
 {
     /**
      * Display a paginated list of projects for the authenticated user.
-     *
-     * @param Request $request
-     * @return View
      */
     public function index(Request $request): View
     {
@@ -23,7 +25,8 @@ class ProjectController extends Controller
             ->whereBelongsTo($request->user())
             ->withCount('issues')
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->through(fn (Project $project): array => ProjectResource::make($project)->resolve($request));
 
         return view('projects.index', [
             'projects' => $projects,
@@ -32,8 +35,6 @@ class ProjectController extends Controller
 
     /**
      * Show the form for creating a new project.
-     *
-     * @return View
      */
     public function create(): View
     {
@@ -42,16 +43,10 @@ class ProjectController extends Controller
 
     /**
      * Store a newly created project in storage.
-     *
-     * @param StoreProjectRequest $request
-     * @return RedirectResponse
      */
-    public function store(StoreProjectRequest $request): RedirectResponse
+    public function store(StoreProjectRequest $request, CreateProjectAction $createProject): RedirectResponse
     {
-        $project = Project::query()->create([
-            ...$request->validated(),
-            'user_id' => $request->user()->id,
-        ]);
+        $project = $createProject->handle($request->user(), $request->validated());
 
         return to_route('projects.show', $project)
             ->with('status', 'Project created.');
@@ -59,10 +54,6 @@ class ProjectController extends Controller
 
     /**
      * Display the specified project.
-     *
-     * @param Request $request
-     * @param Project $project
-     * @return View
      */
     public function show(Request $request, Project $project): View
     {
@@ -70,22 +61,35 @@ class ProjectController extends Controller
 
         $project->load([
             'issues' => fn ($query) => $query
-                ->with('tags')
                 ->withCount('comments')
                 ->latest(),
         ]);
 
+        $issueTags = collect();
+        $issueIds = $project->issues->pluck('id');
+
+        if ($issueIds->isNotEmpty()) {
+            $issueTags = DB::table('issue_tag')
+                ->join('tags', 'tags.id', '=', 'issue_tag.tag_id')
+                ->whereIn('issue_tag.issue_id', $issueIds)
+                ->select(['issue_tag.issue_id', 'tags.id', 'tags.name', 'tags.color'])
+                ->orderBy('tags.name')
+                ->get()
+                ->unique(fn ($tag) => $tag->issue_id.'-'.$tag->id)
+                ->groupBy('issue_id');
+        }
+
+        $project->issues->each(function ($issue) use ($issueTags): void {
+            $issue->setAttribute('tag_badges', $issueTags->get($issue->id, collect()));
+        });
+
         return view('projects.show', [
-            'project' => $project,
+            'project' => ProjectResource::make($project)->resolve($request),
         ]);
     }
 
     /**
      * Show the form for editing the specified project.
-     *
-     * @param Request $request
-     * @param Project $project
-     * @return View
      */
     public function edit(Request $request, Project $project): View
     {
@@ -98,16 +102,12 @@ class ProjectController extends Controller
 
     /**
      * Update the specified project in storage.
-     *
-     * @param UpdateProjectRequest $request
-     * @param Project $project
-     * @return RedirectResponse
      */
-    public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
+    public function update(UpdateProjectRequest $request, Project $project, UpdateProjectAction $updateProject): RedirectResponse
     {
         $this->authorizeProjectOwner($request, $project);
 
-        $project->update($request->validated());
+        $updateProject->handle($project, $request->validated());
 
         return to_route('projects.show', $project)
             ->with('status', 'Project updated.');
@@ -115,16 +115,12 @@ class ProjectController extends Controller
 
     /**
      * Remove the specified project from storage.
-     *
-     * @param Request $request
-     * @param Project $project
-     * @return RedirectResponse
      */
-    public function destroy(Request $request, Project $project): RedirectResponse
+    public function destroy(Request $request, Project $project, DeleteProjectAction $deleteProject): RedirectResponse
     {
         $this->authorizeProjectOwner($request, $project);
 
-        $project->delete();
+        $deleteProject->handle($project);
 
         return to_route('projects.index')
             ->with('status', 'Project deleted.');
@@ -132,10 +128,6 @@ class ProjectController extends Controller
 
     /**
      * Authorize that the current user owns the specified project.
-     *
-     * @param Request $request
-     * @param Project $project
-     * @return void
      */
     private function authorizeProjectOwner(Request $request, Project $project): void
     {
