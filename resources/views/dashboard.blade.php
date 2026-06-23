@@ -32,7 +32,7 @@
 
             <div class="mt-6 bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-sm text-gray-700">
-                    {{ __('Controller and resource scaffolding is ready. The detailed CRUD screens can be filled in next.') }}
+                    {{ __('Use Projects to group work, Issues to track progress, and Tags to keep triage fast.') }}
                 </div>
             </div>
         </div>

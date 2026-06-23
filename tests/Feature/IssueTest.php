@@ -2,6 +2,7 @@
 
 use App\Http\Requests\StoreIssueRequest;
 use App\Http\Requests\UpdateIssueRequest;
+use App\Models\Comment;
 use App\Models\Issue;
 use App\Models\Project;
 use App\Models\Tag;
@@ -155,4 +156,181 @@ it('does not create an issue for another users project', function () {
         'project_id' => $project->id,
         'title' => 'Fix login redirect',
     ]);
+});
+
+it('shows filtered issues for the authenticated users projects', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create([
+        'name' => 'Customer Portal',
+    ]);
+    $bug = Tag::factory()->create([
+        'name' => 'Bug',
+        'color' => '#ff2525',
+    ]);
+    $matchingIssue = Issue::factory()->for($project)->create([
+        'title' => 'Fix checkout total',
+        'status' => 'open',
+        'priority' => 'high',
+    ]);
+    $hiddenPriorityIssue = Issue::factory()->for($project)->create([
+        'title' => 'Polish dashboard cards',
+        'status' => 'open',
+        'priority' => 'low',
+    ]);
+    $otherProjectIssue = Issue::factory()->create([
+        'title' => 'Private roadmap item',
+        'status' => 'open',
+        'priority' => 'high',
+    ]);
+
+    $matchingIssue->tags()->attach($bug);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', [
+            'status' => 'open',
+            'priority' => 'high',
+            'tag' => $bug->id,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Fix checkout total')
+        ->assertSee('Customer Portal')
+        ->assertSee('Bug')
+        ->assertSee('#ff2525', false)
+        ->assertDontSee('Polish dashboard cards')
+        ->assertDontSee('Private roadmap item')
+        ->assertDontSee(route('issues.show', $hiddenPriorityIssue, absolute: false))
+        ->assertDontSee(route('issues.show', $otherProjectIssue, absolute: false));
+});
+
+it('shows an owned issue with tags and comments', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create([
+        'name' => 'Mobile App',
+    ]);
+    $issue = Issue::factory()->for($project)->create([
+        'title' => 'Fix login redirect',
+        'description' => 'Users should land on their dashboard.',
+        'status' => 'in_progress',
+        'priority' => 'high',
+    ]);
+    $tag = Tag::factory()->create([
+        'name' => 'Bug',
+        'color' => '#ff2525',
+    ]);
+
+    $issue->tags()->attach($tag);
+    Comment::factory()->for($issue)->create([
+        'author_name' => 'Ada Lovelace',
+        'body' => 'This also happens on mobile.',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.show', $issue))
+        ->assertSuccessful()
+        ->assertSee('Fix login redirect')
+        ->assertSee('Users should land on their dashboard.')
+        ->assertSee('Mobile App')
+        ->assertSee('In Progress')
+        ->assertSee('High')
+        ->assertSee('Bug')
+        ->assertSee('Ada Lovelace')
+        ->assertSee('This also happens on mobile.');
+});
+
+it('does not show another users issue', function () {
+    $user = User::factory()->create();
+    $issue = Issue::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('issues.show', $issue))
+        ->assertNotFound();
+});
+
+it('shows the issue edit form for an owned issue', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create([
+        'name' => 'Customer Portal',
+    ]);
+    $issue = Issue::factory()->for($project)->create([
+        'title' => 'Fix login redirect',
+        'status' => 'open',
+        'priority' => 'medium',
+    ]);
+    $tag = Tag::factory()->create([
+        'name' => 'Bug',
+    ]);
+
+    $issue->tags()->attach($tag);
+
+    $this->actingAs($user)
+        ->get(route('issues.edit', $issue))
+        ->assertSuccessful()
+        ->assertSee('Edit Issue')
+        ->assertSee('Fix login redirect')
+        ->assertSee('Customer Portal')
+        ->assertSee('Bug')
+        ->assertSee('checked', false);
+});
+
+it('updates an owned issue through the update action', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $issue = Issue::factory()->for($project)->create([
+        'title' => 'Old title',
+    ]);
+    $tag = Tag::factory()->create();
+
+    $this->actingAs($user)
+        ->patch(route('issues.update', $issue), [
+            'project_id' => $project->id,
+            'title' => 'Updated title',
+            'description' => 'Updated issue details.',
+            'status' => 'closed',
+            'priority' => 'low',
+            'due_date' => '2026-07-01',
+            'tag_ids' => [$tag->id],
+        ])
+        ->assertRedirect(route('issues.show', $issue));
+
+    expect($issue->refresh())
+        ->title->toBe('Updated title')
+        ->description->toBe('Updated issue details.')
+        ->status->toBe('closed')
+        ->priority->toBe('low')
+        ->due_date->toDateString()->toBe('2026-07-01')
+        ->and($issue->tags()->pluck('tags.id')->all())->toBe([$tag->id]);
+});
+
+it('does not move an issue to another users project', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $otherProject = Project::factory()->create();
+    $issue = Issue::factory()->for($project)->create([
+        'title' => 'Original title',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('issues.update', $issue), [
+            'project_id' => $otherProject->id,
+            'title' => 'Updated title',
+            'status' => 'closed',
+            'priority' => 'low',
+        ])
+        ->assertNotFound();
+
+    expect($issue->refresh())
+        ->project_id->toBe($project->id)
+        ->title->toBe('Original title');
+});
+
+it('deletes an owned issue through the delete action', function () {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $issue = Issue::factory()->for($project)->create();
+
+    $this->actingAs($user)
+        ->delete(route('issues.destroy', $issue))
+        ->assertRedirect(route('projects.show', $project));
+
+    $this->assertModelMissing($issue);
 });

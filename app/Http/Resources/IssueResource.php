@@ -25,6 +25,14 @@ class IssueResource extends JsonResource
             'priority_label' => str($this->priority)->title()->toString(),
             'due_date' => $this->due_date?->toDateString(),
             'due_date_label' => $this->due_date?->format('M j'),
+            'created_at_label' => $this->created_at?->format('M j, Y'),
+            'project' => $this->when(
+                $this->relationLoaded('project'),
+                fn (): array => [
+                    'id' => $this->project->id,
+                    'name' => $this->project->name,
+                ],
+            ),
             'comments_count' => $this->whenCounted('comments'),
             'tags' => $this->when(
                 $this->relationLoaded('tags'),
@@ -32,7 +40,7 @@ class IssueResource extends JsonResource
                     ->map(fn ($tag): array => TagResource::make($tag)->resolve($request))
                     ->all(),
             ),
-            'tag_badges' => collect($this->resource->getAttribute('tag_badges') ?? [])->map(fn ($tag): array => [
+            'tag_badges' => collect($this->resource->getAttributes()['tag_badges'] ?? [])->map(fn ($tag): array => [
                 'id' => $tag->id,
                 'name' => $tag->name,
                 'color' => $tag->color,
